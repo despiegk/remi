@@ -12,11 +12,19 @@ from Jumpscale.core.InstallTools import *
 import threading
 import time
 
-class MyTextBox(gui.TextInput):
-    def __init__(self, **kwargs):
-        super(MyTextBox, self).__init__( **kwargs)
+class LogBox(gui.TextInput):
+    def __init__(self, root, **kwargs):
+        self.root = root
+        super(LogBox, self).__init__( **kwargs)
         self.lines=[]
-        self.style['margin'] = 'auto'        
+        self.style['width']='50%'
+        self.style['height']=f'{self.root.height-40}px'
+        self.style['margin'] = '10px'       
+        self.style['left']='0px' 
+        self.style['background-color']='#b6b6b6' 
+        self.single_line=False
+
+                    # style='left: 0px; top: 30px; background-color: #b6b6b6'
 
         self.log("""
         a
@@ -24,6 +32,7 @@ class MyTextBox(gui.TextInput):
         c
         d
         """)
+
 
 
     def trigger(self,app):
@@ -85,7 +94,7 @@ class Menu(gui.Menu):
         self.root = root
 
         super(Menu, self).__init__(**kwargs)
-        self.width = 620
+        self.width = "100%"
         self.height = 30
 
         m1 = gui.MenuItem('File', width=100, height=30)
@@ -110,7 +119,7 @@ class Menu(gui.Menu):
         self.fileselectionDialog.cancel_dialog.do(
             self.on_dialog_cancel)
         # here is shown the dialog as root widget
-        self.fileselectionDialog.show(self)
+        self.fileselectionDialog.show(self.root)
 
     def menu_save_clicked(self, widget):
         pass
@@ -125,7 +134,7 @@ class Menu(gui.Menu):
         # self.root.set_root_widget(self.root.main)
     
     def on_dialog_cancel(self, widget):
-        self.root.set_root_widget(self.root.main)
+        self.root.set_root_widget(self.root.main_panel)
 
 
 class MyApp(App):
@@ -141,36 +150,38 @@ class MyApp(App):
 
     def add(self,name,item):
         self.__dict__[name]=item
-        self.main.append(item)
+        self.main_panel.append(item)
 
     def init(self):
         self.width=1100
         self.height=800
-        self.main = gui.Container(width=self.width,height=self.height, margin='0px auto', style={'display': 'block', 'overflow': 'hidden'})
+        self.main_panel = gui.Container(width=self.width,height=self.height, margin='0px auto', 
+                style={'display': 'block', 'overflow': 'hidden'})
 
         #add the following 3 lines to your app and the on_window_close method to make the console close automatically
         tag = gui.Tag(_type='script')
         tag.add_child("javascript", """window.onunload=function(e){sendCallback('%s','%s');return "close?";};""" % (str(id(self)), "on_window_close")) 
-        self.main.add_child("onunloadevent", tag)
+        self.main_panel.add_child("onunloadevent", tag)
 
 
     def main(self):
 
         self.init()
 
-        horizontalContainer = gui.Container(width='100%', layout_orientation=gui.Container.LAYOUT_HORIZONTAL, 
-                    margin='0px', style={'display': 'block', 'overflow': 'auto'})
+        # horizontalContainer = gui.Container(width='100%', layout_orientation=gui.Container.LAYOUT_HORIZONTAL, 
+        #             margin='0px', style={'display': 'block', 'overflow': 'auto'})
         
-        subContainerLeft = gui.Container(width=self.width/2,height=self.height/2, style={'display': 'block', 'overflow': 'auto', 'text-align': 'center'})
-        subContainerRight = gui.Container(width=self.width/2,height=self.height/2, style={'display': 'block', 'overflow': 'auto', 'text-align': 'center'})
+        # subContainerLeft = gui.Container(width=self.width/2,height=self.height/2, style={'display': 'block', 'overflow': 'auto', 'text-align': 'center'})
+        # subContainerRight = gui.Container(width=self.width/2,height=self.height/2, style={'display': 'block', 'overflow': 'auto', 'text-align': 'center'})
         
-        self.img = gui.Image('/res:logo.png', height=100, margin='10px')
+        # self.img = gui.Image('/res:logo.png', height=100, margin='10px')
 
-
-        self.add("logger",MyTextBox(width='80%', height='100%',single_line=False))
         #TODO: menu doesnt work yet
-        # self.add("menu",Menu(root=self,width = self.width,height=30))
-        self.main.append(horizontalContainer)
+        self.add("menu",Menu(root=self,width = self.width,height=30))
+
+
+        self.add("logger",LogBox(self))
+        # self.main_panel.append(horizontalContainer)
 
 
 
@@ -182,6 +193,13 @@ class MyApp(App):
         # appending a widget to another, the first argument is a string key
         # wid.append(self.table)
 
+        self.background()
+
+        # returning the root widget
+        return self.main_panel
+
+
+    def background(self):
         self.thread_alive_flag = True
         
         #Here I start a parallel thread that executes my algorithm for a long time
@@ -189,8 +207,6 @@ class MyApp(App):
         t.start()
 
 
-        # returning the root widget
-        return self.main
 
     def my_intensive_long_time_algorithm(self):
         i=1
